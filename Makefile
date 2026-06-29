@@ -85,9 +85,10 @@ module-publish: ## [Module] Platform team pushes feature — CI quality gate →
 	@cd $(MODULE_DIR) && git add -A && \
 	 git commit -m 'feat: add min_tls_version variable (default TLS1_2) — non-breaking' && \
 	 $(SSH) git push origin main
-	@printf "\n  → CI is running: fmt-check → validate → terraform test\n"
-	@printf "  → On pass: CI auto-tags next minor version → TFC Registry picks it up\n"
-	@printf "  → $(GH_CI)\n\n"
+	@printf "\n  $(Y)⏳ CI is now running — open GitHub Actions to watch quality gate:$(R)\n"
+	@printf "  → $(GH_CI)\n"
+	@printf "\n  Pipeline: fmt-check → validate → terraform test → auto-tag vX.Y.0\n"
+	@printf "  $(Y)Wait for CI to pass before proceeding — tag appears only after CI is green.$(R)\n\n"
 
 app-upgrade: ## [App] Application team upgrades dev to latest published module version
 	@printf "$(C)>>> Fetching latest module version from registry...$(R)\n"
