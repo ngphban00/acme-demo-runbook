@@ -21,6 +21,7 @@ Y := \033[33m
 
 .PHONY: help check setup status status-registry \
         show-sentinel sentinel-fail sentinel-pass \
+        show-credentials \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
@@ -124,6 +125,11 @@ open(f,'w').write(c)" "$$MINOR" && \
 	   printf "\n  → Push to main → TFC dev workspace auto-triggers plan + apply\n" && \
 	   printf "  → $(TFC_DEV)\n\n"; \
 	 fi
+
+# ── Credentials ───────────────────────────────────────────────────────────────
+
+show-credentials: ## Show no Azure creds on local machine — TFC holds them in workspace vars
+	@python3 $(RUNBOOK_DIR)/demo-scripts/show_credentials.py
 
 # ── CLI: Speculative Plan ─────────────────────────────────────────────────────
 # terraform plan against a TFC workspace creates a SPECULATIVE plan:
