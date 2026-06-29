@@ -105,13 +105,11 @@ setup: ## [Setup] Clone repos and terraform init (run once on a fresh machine)
 
 cli-plan-dev: ## [CLI] Run terraform plan locally — executes remotely on TFC Dev
 	@printf "$(C)>>> Running terraform plan on dev (executes on TFC, streams locally)...$(R)\n"
-	@[ -d $(APPS_DIR)/envs/dev/azure/.terraform ] || (printf "  Running terraform init first...\n" && cd $(APPS_DIR)/envs/dev/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)')
-	@cd $(APPS_DIR)/envs/dev/azure && terraform plan
+	@cd $(APPS_DIR)/envs/dev/azure && terraform init -upgrade -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)' && terraform plan
 
 cli-plan-staging: ## [CLI] Run terraform plan locally — executes remotely on TFC Staging
 	@printf "$(C)>>> Running terraform plan on staging (executes on TFC, streams locally)...$(R)\n"
-	@[ -d $(APPS_DIR)/envs/staging/azure/.terraform ] || (printf "  Running terraform init first...\n" && cd $(APPS_DIR)/envs/staging/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)')
-	@cd $(APPS_DIR)/envs/staging/azure && terraform plan
+	@cd $(APPS_DIR)/envs/staging/azure && terraform init -upgrade -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)' && terraform plan
 
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
