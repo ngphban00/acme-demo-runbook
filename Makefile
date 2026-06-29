@@ -190,7 +190,7 @@ setup: ## [Setup] Clone repos and terraform init (run once on a fresh machine)
 
 reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	@printf "$(C)>>> Resetting to demo starting state...$(R)\n"
-	@printf "  [1/4] Resetting module code to v1.0.0 baseline...\n"
+	@printf "  [1/5] Resetting module code to v1.0.0 baseline...\n"
 	@python3 $(RUNBOOK_DIR)/demo-scripts/reset_module.py
 	@cd $(MODULE_DIR) && \
 	 if ! git diff --quiet HEAD; then \
@@ -200,7 +200,7 @@ reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	 else \
 	   printf "  - module code: already at baseline\n"; \
 	 fi
-	@printf "  [2/4] Verifying v1.0.0 baseline tag + removing extra versions...\n"
+	@printf "  [2/5] Verifying v1.0.0 baseline tag + removing extra versions...\n"
 	@cd $(MODULE_DIR) && $(SSH) git fetch --tags -q && \
 	 if ! git tag | grep -q '^v1\.0\.0$$'; then \
 	   printf "$(Y)  ✗ v1.0.0 git tag missing — it must point to the original baseline commit.\n"; \
@@ -217,7 +217,7 @@ reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	 else \
 	   printf "  - No extra git tags to delete\n"; \
 	 fi
-	@printf "  [3/4] Resetting app version and access_tier...\n"
+	@printf "  [3/5] Resetting app version and access_tier...\n"
 	@cd $(APPS_DIR) && git checkout main -q && $(SSH) git fetch origin -q && git reset --hard origin/main -q
 	@python3 -c "\
 import re; f='$(DEV_TF)'; c=open(f).read(); \
@@ -238,7 +238,9 @@ open(f,'w').write(c)"
 	 else \
 	   printf "  - app: already at starting state\n"; \
 	 fi
-	@printf "  [4/4] Verifying...\n"
+	@printf "  [4/5] Discarding pending staging runs triggered by reset push...\n"
+	@python3 $(RUNBOOK_DIR)/demo-scripts/discard_pending_runs.py
+	@printf "  [5/5] Verifying...\n"
 	@printf "  ✓ App: consuming module ~> 1.0\n"
 	@printf "  ✓ Registry: " && cd $(MODULE_DIR) && git tag --sort=-v:refname | grep '^v' | tr '\n' ' '
 	@printf "\n\n"
