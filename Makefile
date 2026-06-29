@@ -147,7 +147,7 @@ c=re.sub(r'(azure_region[^\n]*\n)', \
 open(f,'w').write(c)" "$$VER" && \
 	 git add -A && \
 	 git commit -m "feat: upgrade staging to module $$VER" && \
-	 $(SSH) git push origin $$BRANCH && \
+	 $(SSH) git push --force origin $$BRANCH && \
 	 python3 $(RUNBOOK_DIR)/demo-scripts/create_pr.py $$BRANCH $$VER && \
 	 printf "\n  → $(TFC_STG)\n\n" && \
 	 cd $(APPS_DIR) && git checkout main
