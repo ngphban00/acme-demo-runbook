@@ -73,21 +73,51 @@ if os.path.exists(ssh_key):
 
 gh_token_path = f"{HOME}/.github_token"
 gh_token = None
-if os.path.exists(gh_token_path):
+if not os.path.exists(gh_token_path):
+    print(f"{FAIL} GitHub token file missing (~/.github_token)")
+    print(f"       Create a PAT at \033[4mhttps://github.com/settings/tokens\033[0m (scope: repo)")
+    try:
+        entered = input("       Paste token now to save it (or press Enter to skip): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        entered = ""
+    if entered:
+        with open(gh_token_path, "w") as f:
+            f.write(entered)
+        os.chmod(gh_token_path, 0o600)
+        gh_token = entered
+        print(f"{OK} GitHub token saved to {gh_token_path}")
+    else:
+        errors.append("GitHub token file exists (~/.github_token)")
+else:
     gh_token = open(gh_token_path).read().strip()
     check("GitHub token file exists (~/.github_token)", True)
+
+if gh_token:
     data, err = api("https://api.github.com/user", gh_token, "token")
     check("GitHub token valid",
           data is not None and "login" in data,
-          err or f"unexpected response")
-else:
-    check("GitHub token file exists (~/.github_token)", False,
-          "create PAT at https://github.com/settings/tokens (scope: repo)\n"
-          "    then: echo 'ghp_xxx' > ~/.github_token && chmod 600 ~/.github_token")
+          err or "unexpected response")
 
 tfc_creds_path = f"{HOME}/.terraform.d/credentials.tfrc.json"
 tfc_token = None
-if os.path.exists(tfc_creds_path):
+if not os.path.exists(tfc_creds_path):
+    print(f"{FAIL} TFC token missing (~/.terraform.d/credentials.tfrc.json)")
+    print(f"       Create a token at \033[4mhttps://app.terraform.io/app/settings/tokens\033[0m")
+    try:
+        entered = input("       Paste TFC token now to save it (or press Enter to skip): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        entered = ""
+    if entered:
+        os.makedirs(f"{HOME}/.terraform.d", exist_ok=True)
+        creds = {"credentials": {"app.terraform.io": {"token": entered}}}
+        with open(tfc_creds_path, "w") as f:
+            json.dump(creds, f, indent=2)
+        os.chmod(tfc_creds_path, 0o600)
+        tfc_token = entered
+        print(f"{OK} TFC token saved to {tfc_creds_path}")
+    else:
+        errors.append("TFC token file exists (~/.terraform.d/credentials.tfrc.json)")
+else:
     try:
         tfc_token = json.load(open(tfc_creds_path))["credentials"]["app.terraform.io"]["token"]
         check("TFC token file exists (~/.terraform.d/credentials.tfrc.json)", True)
@@ -95,8 +125,6 @@ if os.path.exists(tfc_creds_path):
         check("TFC token valid", data is not None, err or "")
     except (KeyError, json.JSONDecodeError) as e:
         check("TFC token parseable", False, str(e))
-else:
-    check("TFC token file exists", False, "run: terraform login")
 
 # ── 3. Repositories ───────────────────────────────────────────────────────────
 print("\n\033[36m[3/5] Repositories\033[0m")
