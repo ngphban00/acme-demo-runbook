@@ -115,16 +115,17 @@ reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	 else \
 	   printf "  - module code: already at baseline\n"; \
 	 fi
-	@printf "  [2/4] Removing extra tags from registry...\n"
+	@printf "  [2/4] Removing extra versions from TFC Registry + git tags...\n"
+	@python3 $(RUNBOOK_DIR)/demo-scripts/reset_registry.py
 	@cd $(MODULE_DIR) && \
 	 $(SSH) git fetch --tags -q && \
 	 EXTRA=$$(git tag | grep '^v' | grep -v '^v1\.0\.0$$' || true) && \
 	 if [ -n "$$EXTRA" ]; then \
-	   $(SSH) git push origin --delete $$EXTRA 2>/dev/null && \
-	   git tag -d $$EXTRA 2>/dev/null && \
-	   printf "  ✓ Deleted tags: $$EXTRA\n"; \
+	   $(SSH) git push origin --delete $$EXTRA 2>/dev/null; \
+	   git tag -d $$EXTRA 2>/dev/null; \
+	   printf "  ✓ Deleted git tags: $$EXTRA\n"; \
 	 else \
-	   printf "  - No extra tags to delete\n"; \
+	   printf "  - No extra git tags to delete\n"; \
 	 fi
 	@printf "  [3/4] Resetting app version and access_tier...\n"
 	@python3 -c "\
