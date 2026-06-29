@@ -16,9 +16,19 @@ Demo runbook for the ACME Order Portal — Terraform Cloud multi-cloud provision
 git clone git@github.com:ngphban00/acme-demo-runbook.git ~/acme-demo-runbook
 cd ~/acme-demo-runbook
 make setup    # clones the other two repos + terraform init
+make check    # verify all tools, tokens, repos, and TFC/GitHub access
 make destroy  # destroy any existing Azure resources in dev + staging
 make reset    # brings code and registry to demo starting state
 ```
+
+### Required before `make check` passes
+
+| Requirement | How to set up |
+|---|---|
+| SSH key `~/.ssh/github-ngphban00` | `ssh-keygen -t ed25519 -f ~/.ssh/github-ngphban00` → add public key to GitHub |
+| GitHub PAT `~/.github_token` | Create at https://github.com/settings/tokens (scope: `repo`) → `echo 'ghp_xxx' > ~/.github_token && chmod 600 ~/.github_token` |
+| TFC token | `terraform login` |
+| Terraform >= 1.7 | https://developer.hashicorp.com/terraform/install |
 
 ## Resetting for a clean demo
 
