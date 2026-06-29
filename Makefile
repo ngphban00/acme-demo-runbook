@@ -125,21 +125,22 @@ pr-staging: ## [VCS] Open a PR to upgrade staging — shows TFC check on PR, man
 	@printf "$(C)>>> Creating PR to upgrade staging module version...$(R)\n"
 	@cd $(MODULE_DIR) && $(SSH) git fetch --tags -q
 	@LATEST=$$(cd $(MODULE_DIR) && git tag --sort=-v:refname | grep '^v' | head -1) && \
+	 VER=$${LATEST#v} && \
 	 BRANCH="release/staging-$$LATEST" && \
-	 printf "$(C)>>> Upgrading staging to module $$LATEST on branch $$BRANCH...$(R)\n" && \
+	 printf "$(C)>>> Upgrading staging to module $$VER on branch $$BRANCH...$(R)\n" && \
 	 cd $(APPS_DIR) && $(SSH) git fetch origin -q && git checkout -B $$BRANCH origin/main && \
 	 python3 -c " \
 import re, sys; f='$(STG_TF)'; ver=sys.argv[1]; c=open(f).read(); \
-c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"[\d.]+\"', \
+c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"v?[\d.]+\"', \
          lambda m: m.group(1) + 'version = \"' + ver + '\"', c); \
 c=re.sub(r'(azure_region[^\n]*\n)', \
          r'\1  replication_type = \"GRS\"\n  access_tier      = \"Hot\"\n', c) \
   if 'replication_type' not in c else c; \
-open(f,'w').write(c)" "$$LATEST" && \
+open(f,'w').write(c)" "$$VER" && \
 	 git add -A && \
-	 git commit -m "feat: upgrade staging to module $$LATEST" && \
+	 git commit -m "feat: upgrade staging to module $$VER" && \
 	 $(SSH) git push origin $$BRANCH && \
-	 python3 $(RUNBOOK_DIR)/demo-scripts/create_pr.py $$BRANCH $$LATEST && \
+	 python3 $(RUNBOOK_DIR)/demo-scripts/create_pr.py $$BRANCH $$VER && \
 	 printf "\n  → $(TFC_STG)\n\n" && \
 	 cd $(APPS_DIR) && git checkout main
 
@@ -212,7 +213,7 @@ c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"~> [\d.]+\"
 open(f,'w').write(c)"
 	@python3 -c "\
 import re; f='$(STG_TF)'; c=open(f).read(); \
-c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"[\d.]+\"',r'\g<1>version = \"1.0.0\"',c); \
+c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"v?[\d.]+\"',r'\g<1>version = \"1.0.0\"',c); \
 c=re.sub(r'\n  replication_type\s*=\s*\"[^\"]+\"','',c); \
 c=re.sub(r'\n  access_tier\s*=\s*\"[^\"]+\"','',c); \
 open(f,'w').write(c)"
