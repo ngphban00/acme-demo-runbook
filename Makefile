@@ -21,7 +21,7 @@ Y := \033[33m
 
 .PHONY: help check setup status status-registry \
         show-sentinel sentinel-fail sentinel-pass \
-        show-credentials show-audit show-pr-plan \
+        show-credentials show-audit show-pr-plan show-state \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
@@ -136,6 +136,9 @@ show-audit: ## Show TFC run history — who triggered, when, what status, full t
 
 show-pr-plan: ## Fetch speculative plan result on staging PR — run after make pr-staging
 	@python3 $(RUNBOOK_DIR)/demo-scripts/show_pr_plan.py
+
+show-state: ## Show TFC state versions, locking, resource count vs S3+DynamoDB approach
+	@python3 $(RUNBOOK_DIR)/demo-scripts/show_state.py
 
 # ── CLI: Speculative Plan ─────────────────────────────────────────────────────
 # terraform plan against a TFC workspace creates a SPECULATIVE plan:
