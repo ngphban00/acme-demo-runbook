@@ -37,22 +37,17 @@ if "min_tls_version" in content:
 else:
     print("  - README.md: already clean")
 
-# --- tests/unit.tftest.hcl ---
+# --- tests/unit.tftest.hcl: remove default_tls_is_1_2 test ---
 tf = f"{MODULE_DIR}/tests/unit.tftest.hcl"
 content = open(tf).read()
-changed = False
 
-for test_name in ["default_tls_is_1_2", "rejects_invalid_tls_version"]:
-    if f'run "{test_name}"' in content:
-        content = re.sub(
-            rf'\nrun "{test_name}" \{{.*?\n\}}',
-            '', content, flags=re.DOTALL
-        )
-        changed = True
-
-if changed:
+if 'run "default_tls_is_1_2"' in content:
+    content = re.sub(
+        r'\nrun "default_tls_is_1_2" \{.*?\n\}',
+        '', content, flags=re.DOTALL
+    )
     open(tf, 'w').write(content)
-    print("  ✓ tests/unit.tftest.hcl: removed min_tls_version test cases")
+    print("  ✓ tests/unit.tftest.hcl: removed default_tls_is_1_2 test")
 else:
     print("  - tests/unit.tftest.hcl: already clean")
 
