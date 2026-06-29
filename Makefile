@@ -193,7 +193,7 @@ reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	   printf "  - No extra git tags to delete\n"; \
 	 fi
 	@printf "  [3/4] Resetting app version and access_tier...\n"
-	@cd $(APPS_DIR) && git checkout main -q && $(SSH) git fetch origin -q
+	@cd $(APPS_DIR) && git checkout main -q && $(SSH) git fetch origin -q && git reset --hard origin/main -q
 	@python3 -c "\
 import re; f='$(DEV_TF)'; c=open(f).read(); \
 c=re.sub(r'access_tier\s*=\s*\"Hot\"','access_tier      = \"Cool\"',c); \
