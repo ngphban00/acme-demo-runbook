@@ -21,7 +21,7 @@ Y := \033[33m
 
 .PHONY: help check setup status status-registry \
         show-sentinel sentinel-fail sentinel-pass \
-        show-credentials show-audit \
+        show-credentials show-audit show-pr-plan \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
@@ -134,6 +134,9 @@ show-credentials: ## Show no Azure creds on local machine — TFC holds them in 
 show-audit: ## Show TFC run history — who triggered, when, what status, full trail
 	@python3 $(RUNBOOK_DIR)/demo-scripts/show_audit.py
 
+show-pr-plan: ## Fetch speculative plan result on staging PR — run after make pr-staging
+	@python3 $(RUNBOOK_DIR)/demo-scripts/show_pr_plan.py
+
 # ── CLI: Speculative Plan ─────────────────────────────────────────────────────
 # terraform plan against a TFC workspace creates a SPECULATIVE plan:
 # read-only preview, never applies, no approval button.
@@ -177,6 +180,9 @@ open(f,'w').write(c)" "$$VER" && \
 	 git commit -m "feat: upgrade staging to module $$VER" && \
 	 $(SSH) git push --force origin $$BRANCH && \
 	 python3 $(RUNBOOK_DIR)/demo-scripts/create_pr.py $$BRANCH $$VER && \
+	 printf "\n  $(Y)⏳ TFC will now run a speculative plan on this PR as a GitHub check.$(R)\n" && \
+	 printf "  This is NOT a GitHub Actions CI run — it runs in TFC with workspace credentials.\n" && \
+	 printf "  Run 'make show-pr-plan' to fetch the plan result when ready (~1 min).\n" && \
 	 printf "\n  → $(TFC_STG)\n\n" && \
 	 cd $(APPS_DIR) && git checkout main
 
