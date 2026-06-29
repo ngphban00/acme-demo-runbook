@@ -143,6 +143,12 @@ import re; f='$(DEV_TF)'; c=open(f).read(); \
 c=re.sub(r'access_tier\s*=\s*\"Hot\"','access_tier      = \"Cool\"',c); \
 c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"~> [\d.]+\"',r'\g<1>version = \"~> 1.0\"',c); \
 open(f,'w').write(c)"
+	@python3 -c "\
+import re; f='$(STG_TF)'; c=open(f).read(); \
+c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"[\d.]+\"',r'\g<1>version = \"1.0.0\"',c); \
+c=re.sub(r'\n  replication_type\s*=\s*\"[^\"]+\"','',c); \
+c=re.sub(r'\n  access_tier\s*=\s*\"[^\"]+\"','',c); \
+open(f,'w').write(c)"
 	@cd $(APPS_DIR) && \
 	 if ! git diff --quiet HEAD; then \
 	   git add -A && \
