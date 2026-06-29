@@ -136,14 +136,8 @@ open(f,'w').write(c)" "$$LATEST" && \
 	 git add -A && \
 	 git commit -m "feat: upgrade staging to module $$LATEST" && \
 	 $(SSH) git push origin $$BRANCH && \
-	 printf "\n  → Branch pushed. Open PR at:\n" && \
-	 printf "  → $(GH_APPS)/compare/$$BRANCH\n" && \
-	 printf "\n  $(Y)Next steps:$(R)\n" && \
-	 printf "  1. Open the PR link above — TFC will show a speculative plan check\n" && \
-	 printf "  2. Review the plan in the PR checks tab\n" && \
-	 printf "  3. Merge the PR → TFC staging workspace triggers a real plan\n" && \
-	 printf "  4. Go to TFC UI → staging → Confirm & Apply\n" && \
-	 printf "  → $(TFC_STG)\n\n" && \
+	 python3 $(RUNBOOK_DIR)/demo-scripts/create_pr.py $$BRANCH $$LATEST && \
+	 printf "\n  → $(TFC_STG)\n\n" && \
 	 cd $(APPS_DIR) && git checkout main
 
 # ── Destroy ───────────────────────────────────────────────────────────────────
@@ -164,6 +158,8 @@ setup: ## [Setup] Clone repos and terraform init (run once on a fresh machine)
 	@cd $(APPS_DIR)/envs/dev/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
 	@printf "  Initializing staging workspace...\n"
 	@cd $(APPS_DIR)/envs/staging/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
+	@[ -f $(HOME)/.github_token ] && printf "  ✓ GitHub token found\n" || \
+	  printf "  $(Y)⚠ GitHub token missing — create one at https://github.com/settings/tokens\n    then: echo 'ghp_xxx' > ~/.github_token && chmod 600 ~/.github_token$(R)\n"
 	@printf "  ✓ Setup complete. Run: make reset\n\n"
 
 # ── Reset ─────────────────────────────────────────────────────────────────────
