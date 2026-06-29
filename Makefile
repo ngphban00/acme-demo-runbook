@@ -157,10 +157,6 @@ setup: ## [Setup] Clone repos and terraform init (run once on a fresh machine)
 	@printf "$(C)>>> Setting up demo environment...$(R)\n"
 	@[ -d $(APPS_DIR) ] || $(SSH) git clone git@github.com:ngphban00/acme-apps-azure.git $(APPS_DIR)
 	@[ -d $(MODULE_DIR) ] || $(SSH) git clone git@github.com:ngphban00/terraform-azurerm-static-site.git $(MODULE_DIR)
-	@printf "  Initializing dev workspace...\n"
-	@cd $(APPS_DIR)/envs/dev/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
-	@printf "  Initializing staging workspace...\n"
-	@cd $(APPS_DIR)/envs/staging/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
 	@[ -f $(HOME)/.github_token ] && printf "  ✓ GitHub token found\n" || \
 	  printf "  $(Y)⚠ GitHub token missing — create one at https://github.com/settings/tokens\n    then: echo 'ghp_xxx' > ~/.github_token && chmod 600 ~/.github_token$(R)\n"
 	@printf "  Tagging baseline commit as v1.0.0 (one-time, never overwritten)...\n"

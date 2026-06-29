@@ -142,8 +142,10 @@ for env, path in [
     ("dev",     f"{HOME}/acme-apps-azure/envs/dev/azure/.terraform"),
     ("staging", f"{HOME}/acme-apps-azure/envs/staging/azure/.terraform"),
 ]:
-    check(f"terraform initialized ({env})", os.path.isdir(path),
-          "run: make setup")
+    if os.path.isdir(path):
+        check(f"terraform initialized ({env})", True)
+    else:
+        warn(f"terraform not yet initialized ({env}) — will init automatically on make speculative-{env}")
 
 # ── 4. TFC Workspaces & Registry ─────────────────────────────────────────────
 print("\n\033[36m[4/5] Terraform Cloud\033[0m")
