@@ -1,8 +1,9 @@
 SHELL    := /bin/bash
 .DEFAULT_GOAL := help
 
-APPS_DIR   := $(HOME)/acme-apps-azure
-MODULE_DIR := $(HOME)/terraform-azurerm-static-site
+RUNBOOK_DIR := $(HOME)/acme-demo-runbook
+APPS_DIR    := $(HOME)/acme-apps-azure
+MODULE_DIR  := $(HOME)/terraform-azurerm-static-site
 DEV_TF     := $(APPS_DIR)/envs/dev/azure/main.tf
 STG_TF     := $(APPS_DIR)/envs/staging/azure/main.tf
 SSH        := GIT_SSH_COMMAND='ssh -i $(HOME)/.ssh/github-ngphban00 -o StrictHostKeyChecking=no'
@@ -64,7 +65,7 @@ open(f,'w').write(c)"
 
 module-publish: ## [Module] Platform team pushes feature — CI runs tests then auto-tags
 	@printf "$(C)>>> Platform team: pushing new feature to module repo...$(R)\n"
-	@python3 $(APPS_DIR)/demo-scripts/patch_module_v1_3.py
+	@python3 $(RUNBOOK_DIR)/demo-scripts/patch_module_v1_3.py
 	@cd $(MODULE_DIR) && git add -A && \
 	 git commit -m 'feat: add min_tls_version variable (default TLS1_2) — non-breaking' && \
 	 $(SSH) git push origin main
@@ -105,7 +106,7 @@ cli-plan-staging: ## [CLI] Run terraform plan locally — executes remotely on T
 reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	@printf "$(C)>>> Resetting to demo starting state...$(R)\n"
 	@printf "  [1/4] Resetting module code to v1.0.0 baseline...\n"
-	@python3 $(APPS_DIR)/demo-scripts/reset_module.py
+	@python3 $(RUNBOOK_DIR)/demo-scripts/reset_module.py
 	@cd $(MODULE_DIR) && \
 	 if ! git diff --quiet HEAD; then \
 	   git add -A && \
