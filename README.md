@@ -68,36 +68,28 @@ Run all commands from `~/acme-demo-runbook`.
 
 There is no single "deploy to staging" command. Promotion is a **deliberate human decision** at each gate.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Platform Team          terraform-azurerm-static-site        │
-│                                                              │
-│  feat: commit ──► CI quality gate ──► auto-tag vX.Y.0       │
-│                   (fmt + validate       TFC Registry         │
-│                    terraform test)      gains new version    │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ App team decides to consume
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│  DEV  (acme-apps-azure-dev)                                  │
-│                                                              │
-│  make app-upgrade                                            │
-│  └─► version "~> 1.1"  ──► push to main                     │
-│                             └─► TFC auto-apply  ✅ no gate  │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ App team decides to promote
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STAGING  (acme-apps-azure-staging)                          │
-│                                                              │
-│  make pr-staging                                             │
-│  └─► branch release/staging-vX.Y.Z                          │
-│       └─► PR opened                                          │
-│            ├─► TFC speculative plan (PR check)  👁 review   │
-│            └─► merge                                         │
-│                 └─► TFC real plan                            │
-│                      └─► Confirm & Apply  ✅ human gate     │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph PT ["Platform Team — terraform-azurerm-static-site"]
+        A["feat: commit"] --> B["CI quality gate\nfmt · validate · terraform test"]
+        B --> C["auto-tag vX.Y.0\nTFC Registry gains new version"]
+    end
+
+    subgraph DEV ["DEV — acme-apps-azure-dev"]
+        E["make app-upgrade\nversion '~> 1.1'"] --> F["push to main"]
+        F --> G["✅ TFC auto-apply\nno gate"]
+    end
+
+    subgraph STG ["STAGING — acme-apps-azure-staging"]
+        I["make pr-staging\nbranch release/staging-vX.Y.Z"] --> J["PR opened"]
+        J --> K["👁 TFC speculative plan\nPR check — review here"]
+        K --> L["merge"]
+        L --> M["TFC real plan"]
+        M --> N["✅ Confirm & Apply\nhuman gate"]
+    end
+
+    C -->|"App team decides to consume"| E
+    G -->|"App team decides to promote"| I
 ```
 
 ### Why no "push to staging"?
