@@ -19,7 +19,7 @@ C := \033[36m
 R := \033[0m
 Y := \033[33m
 
-.PHONY: help check setup status \
+.PHONY: help check setup status status-registry \
         sentinel-fail sentinel-pass \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
@@ -42,6 +42,9 @@ status: ## Show git log + module tags for both repos
 	@cd $(MODULE_DIR) && git log --oneline -4
 	@printf "Tags: " && cd $(MODULE_DIR) && git tag --sort=-v:refname | tr '\n' ' '
 	@printf "\n\n"
+
+status-registry: ## Show Registry versions + what each env is consuming (demo talking point)
+	@python3 $(RUNBOOK_DIR)/demo-scripts/registry_status.py
 
 # ── Sentinel ──────────────────────────────────────────────────────────────────
 
@@ -81,6 +84,8 @@ open(f,'w').write(c)"
 
 module-publish: ## [Module] Platform team pushes feature — CI quality gate → auto-tag
 	@printf "$(C)>>> Platform team: pushing new feature to module repo...$(R)\n"
+	@printf "$(Y)  Registry state before publish:$(R)\n"
+	@python3 $(RUNBOOK_DIR)/demo-scripts/registry_status.py
 	@python3 $(RUNBOOK_DIR)/demo-scripts/patch_module_v1_3.py
 	@cd $(MODULE_DIR) && git add -A && \
 	 git commit -m 'feat: add min_tls_version variable (default TLS1_2) — non-breaking' && \
@@ -91,11 +96,14 @@ module-publish: ## [Module] Platform team pushes feature — CI quality gate →
 	@printf "  $(Y)Wait for CI to pass before proceeding — tag appears only after CI is green.$(R)\n\n"
 
 app-upgrade: ## [App] Application team upgrades dev to latest published module version
-	@printf "$(C)>>> Fetching latest module version from registry...$(R)\n"
+	@printf "$(C)>>> App team: consuming new module version from Registry...$(R)\n"
+	@printf "$(Y)  Registry state after CI published new version:$(R)\n"
+	@python3 $(RUNBOOK_DIR)/demo-scripts/registry_status.py
 	@cd $(MODULE_DIR) && $(SSH) git fetch --tags -q
 	@LATEST=$$(cd $(MODULE_DIR) && git tag --sort=-v:refname | grep '^v' | head -1) && \
 	 MINOR=$$(echo $$LATEST | awk -F'[v.]' '{printf "~> %d.%d", $$2, $$3}') && \
-	 printf "$(C)>>> Upgrading dev to module $$MINOR ($$LATEST)...$(R)\n" && \
+	 printf "$(C)>>> Upgrading dev: version constraint $$MINOR (resolves to $$LATEST)$(R)\n" && \
+	 printf "  Note: staging stays pinned to its current exact version — no automatic promotion\n\n" && \
 	 python3 -c " \
 import re, sys; f='$(DEV_TF)'; minor=sys.argv[1]; c=open(f).read(); \
 c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"~> [\d.]+\"', \
