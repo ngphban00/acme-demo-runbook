@@ -107,9 +107,9 @@ cli-plan-dev: ## [CLI] Run terraform plan locally — executes remotely on TFC D
 	@printf "$(C)>>> Running terraform plan on dev (executes on TFC, streams locally)...$(R)\n"
 	@cd $(APPS_DIR)/envs/dev/azure && terraform init -upgrade -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)' && terraform plan
 
-cli-plan-staging: ## [CLI] Run terraform plan locally — executes remotely on TFC Staging
-	@printf "$(C)>>> Running terraform plan on staging (executes on TFC, streams locally)...$(R)\n"
-	@cd $(APPS_DIR)/envs/staging/azure && terraform init -upgrade -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)' && terraform plan
+cli-plan-staging: ## [CLI] Run terraform apply on staging — streams to TFC, waits for manual approval
+	@printf "$(C)>>> Running terraform apply on staging (requires manual approval in TFC UI)...$(R)\n"
+	@cd $(APPS_DIR)/envs/staging/azure && terraform init -upgrade -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)' && terraform apply
 
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
