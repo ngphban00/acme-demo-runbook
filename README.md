@@ -15,10 +15,10 @@ Demo runbook for the ACME Order Portal — Terraform Cloud multi-cloud provision
 ```bash
 git clone git@github.com:ngphban00/acme-demo-runbook.git ~/acme-demo-runbook
 cd ~/acme-demo-runbook
-make setup    # clones the other two repos + terraform init
+make setup    # clone repos, tag v1.0.0 baseline in module repo
 make check    # verify all tools, tokens, repos, and TFC/GitHub access
 make destroy  # destroy any existing Azure resources in dev + staging
-make reset    # brings code and registry to demo starting state
+make reset    # bring code and registry to demo starting state
 ```
 
 ### Required before `make check` passes
@@ -47,22 +47,24 @@ After both commands complete, the environment is in the following state:
 |---|---|
 | TFC Registry | v1.0.0 only |
 | acme-apps-azure dev | `version = "~> 1.0"`, `access_tier = "Cool"` |
-| acme-apps-azure staging | `version = "1.0.0"`, no replication_type/access_tier |
+| acme-apps-azure staging | `version = "1.0.0"`, no `replication_type`/`access_tier` |
 | Azure resources | None (destroyed) |
 
 ## Demo Flow
 
 Run all commands from `~/acme-demo-runbook`.
 
-| Step | Command | Repo changed | What changes | Demo point |
-|---|---|---|---|---|
-| 1 | `make module-publish` | `terraform-azurerm-static-site` | Adds `min_tls_version` variable + test case → commits `feat:` → pushes | CI runs quality gate (fmt + validate + terraform test) → auto-tags **v1.1.0** → TFC Registry gains new version |
-| 2 | `make app-upgrade` | `acme-apps-azure` | dev: `version = "~> 1.0"` → `"~> 1.1"` | App team upgrades to new Registry version → TFC dev triggers plan → **auto-apply** (resources created) |
-| 3 | `make sentinel-fail` | `acme-apps-azure` | dev: `access_tier = "Hot"` | Sentinel hard-mandatory FAIL → apply blocked, no one can override |
-| 4 | `make sentinel-pass` | `acme-apps-azure` | dev: `access_tier = "Cool"` | Sentinel PASS → **auto-apply** — infrastructure compliant with policy |
-| 5 | `make speculative-dev` | *(none)* | `terraform plan` = speculative plan, streams locally, executes on TFC | CLI preview only — cannot apply from CLI on VCS-driven workspace |
-| 6 | `make speculative-staging` | *(none)* | Same as above on staging | Shows same speculative behavior — to apply, must go through PR flow |
-| 7 | `make pr-staging` | `acme-apps-azure` | Creates branch `release/staging-vX.Y.Z`, upgrades staging version, pushes, prints PR URL | Open PR → TFC shows speculative plan check → merge → TFC triggers real plan → **manual Confirm & Apply** in TFC UI |
+| Step | Command | What happens | Demo point |
+|---|---|---|---|
+| 1 | `make module-publish` | Platform team commits `feat:` to module repo → CI runs quality gate (fmt + validate + terraform test) → CI auto-tags **v1.1.0** → TFC Registry gains new version | Quality gate as code, versioned artifact, zero manual release steps |
+| 2 | `make app-upgrade` | dev: `version = "~> 1.0"` → `"~> 1.1"` → push to main → TFC dev auto-apply | Fast feedback loop — push to main, infra follows immediately |
+| 3 | `make sentinel-fail` | dev: `access_tier = "Hot"` → push to main → TFC plan passes but **Sentinel hard-fails** | Policy as code — nobody can override hard-mandatory, not even admin |
+| 4 | `make sentinel-pass` | dev: `access_tier = "Cool"` → push to main → Sentinel passes → **TFC auto-apply** | TFC runs queued in order — wait for newest run to appear, old FAIL run will still show briefly |
+| 5 | `make speculative-dev` | `terraform plan` streams locally, executes on TFC as speculative | CLI preview only — no Apply button on VCS-driven workspaces |
+| 6 | `make speculative-staging` | Same speculative plan on staging | Same behavior — to apply, must go through PR |
+| 7 | `make pr-staging` | Creates branch `release/staging-vX.Y.Z`, upgrades staging to exact version, pushes, **auto-creates PR via GitHub API** | PR triggers TFC speculative plan as PR check → merge → TFC real plan → **manual Confirm & Apply** in TFC UI |
+
+> **Sentinel tip (step 3→4):** After `make sentinel-pass`, TFC may still display the FAIL run from step 3 — this is the previous run. Refresh and look at the **newest run** in the list; it will PASS and auto-apply.
 
 ## Code Promotion Model
 
@@ -107,7 +109,7 @@ sequenceDiagram
 
 | | Dev | Staging |
 |---|---|---|
-| Version constraint | `~> 1.1` — accepts any compatible minor | `1.2.0` — exact pin, must be explicit |
+| Version constraint | `~> 1.1` — accepts any compatible minor | `1.1.0` — exact pin, must be explicit |
 | Who decides to upgrade | App team, anytime | App team, via PR review |
 | Apply gate | None — auto-apply on merge | Manual — **Confirm & Apply** in TFC UI |
 | Purpose | Fast feedback, developer freedom | Simulates production, deliberate change control |
@@ -120,24 +122,25 @@ Staging is pinned to an **exact version** because promoting to staging is a cons
 |---|---|---|
 | Auto-apply | ON — merges to main apply immediately | OFF — requires manual approval in TFC UI |
 | Sentinel policy | Hot tier blocked (dev cost control) | Hot tier allowed (production-like) |
-| Version constraint | `~> 1.1` (minor range, flexible) | `1.2.0` (exact pin, conservative) |
+| Version constraint | `~> 1.1` (minor range, flexible) | `1.1.0` (exact pin, conservative) |
 | Apply trigger | Push to main | PR → merge → **Confirm & Apply** |
 
 ## All Targets
 
 ```
-make help               List all targets with descriptions
-make setup              Clone repos + terraform init (run once on a fresh machine)
-make status             Show git log + module tags for both repos
-make destroy            Destroy all Azure resources in dev + staging
-make reset              Reset code, registry, and app configs to demo starting state
-make module-publish     Platform team: push new feature → CI quality gate → auto-tag
-make app-upgrade        App team: upgrade dev to latest published module version
-make sentinel-fail      Set access_tier=Hot on dev → Sentinel FAIL
-make sentinel-pass      Revert access_tier=Cool on dev → Sentinel PASS + auto-apply
-make speculative-dev    Speculative plan on dev — preview only, cannot apply from CLI
+make check               Verify tools, tokens, repos, TFC/GitHub access before demo
+make help                List all targets with descriptions
+make status              Show git log + module tags for both repos
+make setup               Clone repos, tag v1.0.0 baseline (run once on a fresh machine)
+make destroy             Destroy all Azure resources in dev + staging
+make reset               Reset code, registry, and app configs to demo starting state
+make module-publish      Platform team: push new feature → CI quality gate → auto-tag
+make app-upgrade         App team: upgrade dev to latest published module version
+make sentinel-fail       Set access_tier=Hot on dev → Sentinel FAIL (idempotent)
+make sentinel-pass       Revert access_tier=Cool on dev → Sentinel PASS + auto-apply (idempotent)
+make speculative-dev     Speculative plan on dev — preview only, cannot apply from CLI
 make speculative-staging Speculative plan on staging — preview only, must use PR to apply
-make pr-staging         Create PR to upgrade staging → TFC check on PR → manual approve after merge
+make pr-staging          Create PR to upgrade staging → TFC check on PR → manual approve after merge
 ```
 
 ## Key URLs
