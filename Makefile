@@ -179,10 +179,17 @@ reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	 else \
 	   printf "  - module code: already at baseline\n"; \
 	 fi
-	@printf "  [2/4] Removing extra versions from TFC Registry + git tags...\n"
+	@printf "  [2/4] Ensuring v1.0.0 in Registry + removing extra versions...\n"
+	@cd $(MODULE_DIR) && $(SSH) git fetch --tags -q && \
+	 if ! git tag | grep -q '^v1\.0\.0$$'; then \
+	   printf "  → git tag v1.0.0 not found — creating and pushing...\n" && \
+	   git tag v1.0.0 && \
+	   $(SSH) git push origin v1.0.0 && \
+	   printf "  → Waiting 45s for TFC Registry webhook...\n" && \
+	   sleep 45; \
+	 fi
 	@python3 $(RUNBOOK_DIR)/demo-scripts/reset_registry.py
 	@cd $(MODULE_DIR) && \
-	 $(SSH) git fetch --tags -q && \
 	 EXTRA=$$(git tag | grep '^v' | grep -v '^v1\.0\.0$$' || true) && \
 	 if [ -n "$$EXTRA" ]; then \
 	   $(SSH) git push origin --delete $$EXTRA 2>/dev/null; \

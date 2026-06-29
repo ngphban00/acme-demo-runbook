@@ -31,16 +31,26 @@ except urllib.error.HTTPError as e:
     sys.exit(1)
 
 statuses = data.get("data", {}).get("attributes", {}).get("version-statuses", [])
-to_delete = [s["version"] for s in statuses if s["version"] != KEEP]
+versions = [s["version"] for s in statuses]
+to_delete = [v for v in versions if v != KEEP]
 
 if not to_delete:
     print(f"  - Registry: only {KEEP} present, nothing to delete")
-    sys.exit(0)
+else:
+    for ver in to_delete:
+        req = urllib.request.Request(f"{base}/{ver}", headers=headers, method="DELETE")
+        try:
+            urllib.request.urlopen(req)
+            print(f"  ✓ Deleted registry version v{ver}")
+        except urllib.error.HTTPError as e:
+            print(f"  ✗ Failed to delete v{ver}: {e.code} {e.reason}")
 
-for ver in to_delete:
-    req = urllib.request.Request(f"{base}/{ver}", headers=headers, method="DELETE")
-    try:
-        urllib.request.urlopen(req)
-        print(f"  ✓ Deleted registry version v{ver}")
-    except urllib.error.HTTPError as e:
-        print(f"  ✗ Failed to delete v{ver}: {e.code} {e.reason}")
+# Verify v1.0.0 is present after cleanup
+if KEEP not in versions:
+    print(f"  ⚠ v{KEEP} not found in Registry.")
+    print(f"    Push git tag v{KEEP} to bootstrap:")
+    print(f"    cd ~/terraform-azurerm-static-site && git tag v{KEEP} && git push origin v{KEEP}")
+    print(f"    Then wait ~60s and re-run make reset.")
+    sys.exit(1)
+else:
+    print(f"  ✓ Registry: v{KEEP} confirmed")

@@ -163,6 +163,10 @@ if tfc_token:
     if data:
         versions = [v["version"] for v in data["data"]["attributes"].get("version-statuses", [])]
         check(f"TFC Registry: order-portal/azurerm ({', '.join(versions)})", True)
+        check("TFC Registry: v1.0.0 present (required baseline)",
+              "1.0.0" in versions,
+              "push git tag: cd ~/terraform-azurerm-static-site && git tag v1.0.0 && git push origin v1.0.0\n"
+              "    then wait ~60s and re-run make check")
     else:
         check("TFC Registry: order-portal/azurerm", False, err or "module not found")
 else:
