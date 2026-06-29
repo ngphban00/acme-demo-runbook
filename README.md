@@ -64,6 +64,53 @@ Run all commands from `~/acme-demo-runbook`.
 | 6 | `make speculative-staging` | *(none)* | Same as above on staging | Shows same speculative behavior — to apply, must go through PR flow |
 | 7 | `make pr-staging` | `acme-apps-azure` | Creates branch `release/staging-vX.Y.Z`, upgrades staging version, pushes, prints PR URL | Open PR → TFC shows speculative plan check → merge → TFC triggers real plan → **manual Confirm & Apply** in TFC UI |
 
+## Code Promotion Model
+
+There is no single "deploy to staging" command. Promotion is a **deliberate human decision** at each gate.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Platform Team          terraform-azurerm-static-site        │
+│                                                              │
+│  feat: commit ──► CI quality gate ──► auto-tag vX.Y.0       │
+│                   (fmt + validate       TFC Registry         │
+│                    terraform test)      gains new version    │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ App team decides to consume
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│  DEV  (acme-apps-azure-dev)                                  │
+│                                                              │
+│  make app-upgrade                                            │
+│  └─► version "~> 1.1"  ──► push to main                     │
+│                             └─► TFC auto-apply  ✅ no gate  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ App team decides to promote
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│  STAGING  (acme-apps-azure-staging)                          │
+│                                                              │
+│  make pr-staging                                             │
+│  └─► branch release/staging-vX.Y.Z                          │
+│       └─► PR opened                                          │
+│            ├─► TFC speculative plan (PR check)  👁 review   │
+│            └─► merge                                         │
+│                 └─► TFC real plan                            │
+│                      └─► Confirm & Apply  ✅ human gate     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Why no "push to staging"?
+
+| | Dev | Staging |
+|---|---|---|
+| Version constraint | `~> 1.1` — accepts any compatible minor | `1.2.0` — exact pin, must be explicit |
+| Who decides to upgrade | App team, anytime | App team, via PR review |
+| Apply gate | None — auto-apply on merge | Manual — **Confirm & Apply** in TFC UI |
+| Purpose | Fast feedback, developer freedom | Simulates production, deliberate change control |
+
+Staging is pinned to an **exact version** because promoting to staging is a conscious decision — not an automatic follow-on from dev. The PR is the paper trail.
+
 ## Governance contrast: dev vs staging
 
 | | Dev | Staging |
