@@ -69,27 +69,38 @@ Run all commands from `~/acme-demo-runbook`.
 There is no single "deploy to staging" command. Promotion is a **deliberate human decision** at each gate.
 
 ```mermaid
-flowchart TD
-    subgraph PT ["Platform Team — terraform-azurerm-static-site"]
-        A["feat: commit"] --> B["CI quality gate\nfmt · validate · terraform test"]
-        B --> C["auto-tag vX.Y.0\nTFC Registry gains new version"]
+sequenceDiagram
+    actor PT as Platform Team
+    participant CI as CI (GitHub Actions)
+    participant REG as TFC Registry
+    actor AT as App Team
+    participant DEV as TFC · Dev
+    participant STG as TFC · Staging
+
+    rect rgb(30, 50, 80)
+        note over PT,REG: Publish new module version
+        PT->>CI: feat: commit → push
+        CI->>CI: fmt · validate · terraform test
+        CI->>REG: auto-tag vX.Y.0
+        REG-->>AT: new version available
     end
 
-    subgraph DEV ["DEV — acme-apps-azure-dev"]
-        E["make app-upgrade\nversion '~> 1.1'"] --> F["push to main"]
-        F --> G["✅ TFC auto-apply\nno gate"]
+    rect rgb(30, 70, 50)
+        note over AT,DEV: Consume in dev (no gate)
+        AT->>DEV: make app-upgrade · version "~> 1.1"
+        DEV->>DEV: plan
+        DEV-->>AT: ✅ auto-apply
     end
 
-    subgraph STG ["STAGING — acme-apps-azure-staging"]
-        I["make pr-staging\nbranch release/staging-vX.Y.Z"] --> J["PR opened"]
-        J --> K["👁 TFC speculative plan\nPR check — review here"]
-        K --> L["merge"]
-        L --> M["TFC real plan"]
-        M --> N["✅ Confirm & Apply\nhuman gate"]
+    rect rgb(80, 50, 30)
+        note over AT,STG: Promote to staging (human gate)
+        AT->>STG: make pr-staging · PR opened
+        STG-->>AT: 👁 speculative plan (PR check)
+        AT->>STG: review ok · merge PR
+        STG->>STG: real plan
+        STG-->>AT: waiting for approval
+        AT->>STG: ✅ Confirm & Apply
     end
-
-    C -->|"App team decides to consume"| E
-    G -->|"App team decides to promote"| I
 ```
 
 ### Why no "push to staging"?
