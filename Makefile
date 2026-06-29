@@ -52,8 +52,12 @@ import re; f='$(DEV_TF)'; c=open(f).read(); \
 c=re.sub(r'access_tier\s*=\s*\"Cool\"','access_tier      = \"Hot\"',c); \
 open(f,'w').write(c)"
 	@cd $(APPS_DIR) && git add -A && \
-	 git commit -m 'demo: set access_tier=Hot — should trigger Sentinel FAIL' && \
-	 $(SSH) git push origin main
+	 if git diff --quiet HEAD; then \
+	   printf "  - access_tier already Hot — already pushed, check TFC for the run\n"; \
+	 else \
+	   git commit -m 'demo: set access_tier=Hot — should trigger Sentinel FAIL' && \
+	   $(SSH) git push origin main; \
+	 fi
 	@printf "\n  → TFC dev workspace: plan will pass, Sentinel will block apply\n"
 	@printf "  → $(TFC_DEV)\n\n"
 
@@ -64,8 +68,12 @@ import re; f='$(DEV_TF)'; c=open(f).read(); \
 c=re.sub(r'access_tier\s*=\s*\"Hot\"','access_tier      = \"Cool\"',c); \
 open(f,'w').write(c)"
 	@cd $(APPS_DIR) && git add -A && \
-	 git commit -m 'fix: revert access_tier=Cool — Sentinel compliant' && \
-	 $(SSH) git push origin main
+	 if git diff --quiet HEAD; then \
+	   printf "  - access_tier already Cool — already pushed, check TFC for the run\n"; \
+	 else \
+	   git commit -m 'fix: revert access_tier=Cool — Sentinel compliant' && \
+	   $(SSH) git push origin main; \
+	 fi
 	@printf "\n  → TFC dev workspace: plan + Sentinel pass → auto-apply (no human needed)\n"
 	@printf "  → $(TFC_DEV)\n\n"
 
