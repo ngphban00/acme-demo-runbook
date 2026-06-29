@@ -17,7 +17,7 @@ LATEST_TAG := $(shell cd $(MODULE_DIR) && git tag --sort=-v:refname | grep '^v' 
 C := \033[36m
 R := \033[0m
 
-.PHONY: help status \
+.PHONY: help setup status \
         sentinel-fail sentinel-pass \
         module-publish app-upgrade \
         cli-plan-dev cli-plan-staging \
@@ -89,17 +89,29 @@ open(f,'w').write(c)" "$$MINOR" && \
 	 $(SSH) git push origin main
 	@printf "\n  → $(TFC_DEV)\n\n"
 
+# ── Setup ─────────────────────────────────────────────────────────────────────
+
+setup: ## [Setup] Clone repos and terraform init (run once on a fresh machine)
+	@printf "$(C)>>> Setting up demo environment...$(R)\n"
+	@[ -d $(APPS_DIR) ] || $(SSH) git clone git@github.com:ngphban00/acme-apps-azure.git $(APPS_DIR)
+	@[ -d $(MODULE_DIR) ] || $(SSH) git clone git@github.com:ngphban00/terraform-azurerm-static-site.git $(MODULE_DIR)
+	@printf "  Initializing dev workspace...\n"
+	@cd $(APPS_DIR)/envs/dev/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
+	@printf "  Initializing staging workspace...\n"
+	@cd $(APPS_DIR)/envs/staging/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
+	@printf "  ✓ Setup complete. Run: make reset\n\n"
+
 # ── CLI Workflow ──────────────────────────────────────────────────────────────
 
 cli-plan-dev: ## [CLI] Run terraform plan locally — executes remotely on TFC Dev
 	@printf "$(C)>>> Running terraform plan on dev (executes on TFC, streams locally)...$(R)\n"
+	@[ -d $(APPS_DIR)/envs/dev/azure/.terraform ] || (printf "  Running terraform init first...\n" && cd $(APPS_DIR)/envs/dev/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)')
 	@cd $(APPS_DIR)/envs/dev/azure && terraform plan
 
 cli-plan-staging: ## [CLI] Run terraform plan locally — executes remotely on TFC Staging
 	@printf "$(C)>>> Running terraform plan on staging (executes on TFC, streams locally)...$(R)\n"
-	@cd $(APPS_DIR)/envs/staging/azure && \
-	 terraform init -upgrade -input=false 2>&1 | grep -E '(module|provider|initialized|Error)' && \
-	 terraform plan
+	@[ -d $(APPS_DIR)/envs/staging/azure/.terraform ] || (printf "  Running terraform init first...\n" && cd $(APPS_DIR)/envs/staging/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)')
+	@cd $(APPS_DIR)/envs/staging/azure && terraform plan
 
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
