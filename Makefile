@@ -102,10 +102,14 @@ c=re.sub(r'(source\s*=\s*\"app\.terraform\.io[^\n]*\n\s*)version = \"~> [\d.]+\"
          lambda m: m.group(1) + 'version = \"' + minor + '\"', c); \
 open(f,'w').write(c)" "$$MINOR" && \
 	 cd $(APPS_DIR) && git add -A && \
-	 git commit -m "feat: upgrade dev to module $$MINOR" && \
-	 $(SSH) git push origin main
-	@printf "\n  → Push to main → TFC dev workspace auto-triggers plan + apply\n"
-	@printf "  → $(TFC_DEV)\n\n"
+	 if git diff --quiet HEAD; then \
+	   printf "  $(Y)- dev already at module $$MINOR — no change pushed.\n    Run make module-publish first to publish a newer version.$(R)\n"; \
+	 else \
+	   git commit -m "feat: upgrade dev to module $$MINOR" && \
+	   $(SSH) git push origin main && \
+	   printf "\n  → Push to main → TFC dev workspace auto-triggers plan + apply\n" && \
+	   printf "  → $(TFC_DEV)\n\n"; \
+	 fi
 
 # ── CLI: Speculative Plan ─────────────────────────────────────────────────────
 # terraform plan against a TFC workspace creates a SPECULATIVE plan:
