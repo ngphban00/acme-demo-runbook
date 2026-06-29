@@ -19,12 +19,15 @@ C := \033[36m
 R := \033[0m
 Y := \033[33m
 
-.PHONY: help setup status \
+.PHONY: help check setup status \
         sentinel-fail sentinel-pass \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
         destroy reset
+
+check: ## Verify all tools, tokens, repos and TFC/GitHub access before demo
+	@python3 $(RUNBOOK_DIR)/demo-scripts/preflight.py
 
 help: ## List all demo scenarios
 	@printf "\n  $(C)ACME TFC Demo Runbook$(R)\n\n"
