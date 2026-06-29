@@ -20,7 +20,7 @@ R := \033[0m
 Y := \033[33m
 
 .PHONY: help check setup status status-registry \
-        sentinel-fail sentinel-pass \
+        show-sentinel sentinel-fail sentinel-pass \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
@@ -48,8 +48,14 @@ status-registry: ## Show Registry versions + what each env is consuming (demo ta
 
 # ── Sentinel ──────────────────────────────────────────────────────────────────
 
+show-sentinel: ## [Sentinel] Print policy code with annotations — run before sentinel-fail
+	@python3 $(RUNBOOK_DIR)/demo-scripts/explain_sentinel.py
+
 sentinel-fail: ## [Sentinel] Set access_tier=Hot on dev → Sentinel FAIL, apply blocked
 	@printf "$(C)>>> Setting access_tier=Hot to trigger Sentinel policy violation...$(R)\n"
+	@printf "$(Y)  Sentinel will evaluate this after terraform plan completes.\n"
+	@printf "  It checks sa.change.after.access_tier — the planned value, not the HCL source.\n"
+	@printf "  Enforcement: hard-mandatory — no override path exists.$(R)\n\n"
 	@python3 -c "\
 import re; f='$(DEV_TF)'; c=open(f).read(); \
 c=re.sub(r'access_tier\s*=\s*\"Cool\"','access_tier      = \"Hot\"',c); \
@@ -61,7 +67,7 @@ open(f,'w').write(c)"
 	   git commit -m 'demo: set access_tier=Hot — should trigger Sentinel FAIL' && \
 	   $(SSH) git push origin main; \
 	 fi
-	@printf "\n  → TFC dev workspace: plan will pass, Sentinel will block apply\n"
+	@printf "\n  → TFC: plan will complete, then Sentinel evaluates — watch for hard-mandatory block\n"
 	@printf "  → $(TFC_DEV)\n\n"
 
 sentinel-pass: ## [Sentinel] Revert access_tier=Cool on dev → Sentinel PASS, auto-apply
