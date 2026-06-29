@@ -24,7 +24,7 @@ Y := \033[33m
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
-        reset
+        destroy reset
 
 help: ## List all demo scenarios
 	@printf "\n  $(C)ACME TFC Demo Runbook$(R)\n\n"
@@ -145,6 +145,14 @@ open(f,'w').write(c)" "$$LATEST" && \
 	 printf "  4. Go to TFC UI → staging → Confirm & Apply\n" && \
 	 printf "  → $(TFC_STG)\n\n" && \
 	 cd $(APPS_DIR) && git checkout main
+
+# ── Destroy ───────────────────────────────────────────────────────────────────
+
+destroy: ## Destroy all resources in dev + staging (run before reset for clean demo)
+	@printf "$(C)>>> Destroying all resources in dev and staging workspaces...$(R)\n"
+	@printf "$(Y)  This will destroy real Azure infrastructure. Ctrl-C to abort.$(R)\n"
+	@sleep 3
+	@python3 $(RUNBOOK_DIR)/demo-scripts/destroy_workspaces.py
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
