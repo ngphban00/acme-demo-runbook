@@ -1,5 +1,5 @@
-"""Interactive presenter script — walks through each demo step with talking points."""
-import subprocess, sys, os
+"""Presenter teleprompter — talking points, wait cues, and commands at each demo step."""
+import sys, os
 
 C  = "\033[36m";  R  = "\033[0m";  B  = "\033[1m"
 G  = "\033[32m";  Y  = "\033[33m"; DIM= "\033[2m"
@@ -35,10 +35,6 @@ def cmd(command):
 def pause(label="Press Enter to continue..."):
     print(f"\n  {DIM}[ {label} ]{R}", end="")
     input()
-
-def run_step(command):
-    print(f"\n  {G}▶ Executing: {command}{R}\n")
-    subprocess.run(command, shell=True, cwd=RUNBOOK)
 
 STEPS = [
 
@@ -352,8 +348,8 @@ def main():
             pass
 
     print(f"\n{B}{C}  ACME TFC Demo — Presenter Script{R}")
-    print(f"  {DIM}Use arrow keys or press Enter to advance each step.{R}")
-    print(f"  {DIM}Run with a step number to start from that step: python3 present.py 5{R}\n")
+    print(f"  {DIM}Teleprompter mode: run commands in a SEPARATE terminal window.{R}")
+    print(f"  {DIM}Start from a step: make present STEP=5{R}\n")
 
     for i, step in enumerate(STEPS):
         if i < start:
@@ -369,12 +365,7 @@ def main():
         pause("Press Enter to see talking points")
         step["script"]()
 
-        if step["run"]:
-            pause(f"Press Enter to run:  {step['run']}")
-            run_step(step["run"])
-            pause("Press Enter for next step")
-        else:
-            pause("Press Enter for next step")
+        pause("Press Enter for next step")
 
     hr()
     print(f"  {G}{B}Demo complete.{R}\n")

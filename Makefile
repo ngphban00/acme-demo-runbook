@@ -99,8 +99,12 @@ module-publish: ## [Module] Platform team pushes feature — CI quality gate →
 	@python3 $(RUNBOOK_DIR)/demo-scripts/registry_status.py
 	@python3 $(RUNBOOK_DIR)/demo-scripts/patch_module_v1_3.py
 	@cd $(MODULE_DIR) && git add -A && \
-	 git commit -m 'feat: add min_tls_version variable (default TLS1_2) — non-breaking' && \
-	 $(SSH) git push origin main
+	 if git diff --quiet HEAD; then \
+	   printf "  $(Y)- module already patched and pushed — check CI/Registry for latest version$(R)\n"; \
+	 else \
+	   git commit -m 'feat: add min_tls_version variable (default TLS1_2) — non-breaking' && \
+	   $(SSH) git push origin main; \
+	 fi
 	@printf "\n  $(Y)⏳ CI is now running — open GitHub Actions to watch quality gate:$(R)\n"
 	@printf "  → $(GH_CI)\n"
 	@printf "\n  Pipeline: fmt-check → validate → terraform test → auto-tag vX.Y.0\n"
