@@ -163,7 +163,18 @@ setup: ## [Setup] Clone repos and terraform init (run once on a fresh machine)
 	@cd $(APPS_DIR)/envs/staging/azure && terraform init -input=false -no-color 2>&1 | grep -E '(Initialized|module|Error)'
 	@[ -f $(HOME)/.github_token ] && printf "  ✓ GitHub token found\n" || \
 	  printf "  $(Y)⚠ GitHub token missing — create one at https://github.com/settings/tokens\n    then: echo 'ghp_xxx' > ~/.github_token && chmod 600 ~/.github_token$(R)\n"
-	@printf "  ✓ Setup complete. Run: make reset\n\n"
+	@printf "  Tagging baseline commit as v1.0.0 (one-time, never overwritten)...\n"
+	@cd $(MODULE_DIR) && $(SSH) git fetch --tags -q && \
+	 if ! git tag | grep -q '^v1\.0\.0$$'; then \
+	   git tag v1.0.0 && \
+	   $(SSH) git push origin v1.0.0 && \
+	   printf "  → Pushed v1.0.0 — waiting 45s for TFC Registry webhook...\n" && \
+	   sleep 45 && \
+	   printf "  ✓ v1.0.0 published to TFC Registry\n"; \
+	 else \
+	   printf "  ✓ v1.0.0 tag already exists (skipped)\n"; \
+	 fi
+	@printf "  ✓ Setup complete. Run: make destroy && make reset\n\n"
 
 # ── Reset ─────────────────────────────────────────────────────────────────────
 
@@ -179,14 +190,12 @@ reset: ## Reset demo: app on v1.0, registry on v1.0.0 only, module at baseline
 	 else \
 	   printf "  - module code: already at baseline\n"; \
 	 fi
-	@printf "  [2/4] Ensuring v1.0.0 in Registry + removing extra versions...\n"
+	@printf "  [2/4] Verifying v1.0.0 baseline tag + removing extra versions...\n"
 	@cd $(MODULE_DIR) && $(SSH) git fetch --tags -q && \
 	 if ! git tag | grep -q '^v1\.0\.0$$'; then \
-	   printf "  → git tag v1.0.0 not found — creating and pushing...\n" && \
-	   git tag v1.0.0 && \
-	   $(SSH) git push origin v1.0.0 && \
-	   printf "  → Waiting 45s for TFC Registry webhook...\n" && \
-	   sleep 45; \
+	   printf "$(Y)  ✗ v1.0.0 git tag missing — it must point to the original baseline commit.\n"; \
+	   printf "    Re-run: make setup  (will tag current HEAD as v1.0.0)\n$(R)"; \
+	   exit 1; \
 	 fi
 	@python3 $(RUNBOOK_DIR)/demo-scripts/reset_registry.py
 	@cd $(MODULE_DIR) && \
