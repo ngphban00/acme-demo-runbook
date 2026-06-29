@@ -22,10 +22,14 @@ Y := \033[33m
 .PHONY: help check setup status status-registry \
         show-sentinel sentinel-fail sentinel-pass \
         show-credentials show-audit show-pr-plan show-state \
+        present \
         module-publish app-upgrade \
         speculative-dev speculative-staging \
         pr-staging \
         destroy reset
+
+present: ## Interactive presenter script — guided demo with talking points at each step
+	@python3 $(RUNBOOK_DIR)/demo-scripts/present.py $(STEP)
 
 check: ## Verify all tools, tokens, repos and TFC/GitHub access before demo
 	@python3 $(RUNBOOK_DIR)/demo-scripts/preflight.py
